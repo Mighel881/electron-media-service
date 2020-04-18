@@ -117,6 +117,15 @@ void DarwinMediaService::SetMetaData(const Napi::CallbackInfo& info) {
   [songInfo setObject:[NSNumber numberWithFloat:duration] forKey:MPMediaItemPropertyPlaybackDuration];
   [songInfo setObject:[NSNumber numberWithFloat:songID] forKey:MPMediaItemPropertyPersistentID];
 
+  Napi::Value albumArt = info[7];
+  if (albumArt.Type() == napi_string) {
+    if (@available(macOS 10.13.2, *)) {
+      NSImage *image = [[NSImage alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:[NSString stringWithUTF8String:albumArt.As<Napi::String>().Utf8Value().c_str()]]];
+      NSImage *_Nonnull (^requestHandler)(CGSize size) = ^(CGSize size) { return image; };
+      [songInfo setObject:[[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:requestHandler] forKey:MPMediaItemPropertyArtwork];
+    }
+  }
+
   if (songState == "playing") {
     [MPNowPlayingInfoCenter defaultCenter].playbackState = MPNowPlayingPlaybackStatePlaying;
   } else if (songState == "paused") {
